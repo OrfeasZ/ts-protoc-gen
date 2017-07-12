@@ -14,6 +14,10 @@ export function uppercaseFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+export function lowercaseFirst(str: string): string {
+  return str.charAt(0).toLowerCase() + str.slice(1);
+}
+
 const PROTO2_SYNTAX = "proto2";
 export function isProto2(fileDescriptor: FileDescriptorProto): boolean {
   // Empty syntax defaults to proto2

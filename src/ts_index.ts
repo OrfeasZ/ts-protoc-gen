@@ -10,6 +10,7 @@ import {filePathFromProtoWithoutExtension, withAllStdIn} from "./util";
 import {CodeGeneratorRequest, CodeGeneratorResponse} from "google-protobuf/google/protobuf/compiler/plugin_pb";
 import {FileDescriptorProto} from "google-protobuf/google/protobuf/descriptor_pb";
 import {printFileDescriptorTSServices} from "./ts/fileDescriptorTSServices";
+import {printFileDescriptorTSClient} from "./ts/fileDescriptorTSClient";
 
 withAllStdIn((inputBuff: Buffer) => {
   try {
@@ -22,7 +23,8 @@ withAllStdIn((inputBuff: Buffer) => {
     const fileNameToDescriptor: {[key: string]: FileDescriptorProto} = {};
 
     // Generate separate `.ts` files for services if param is set
-    const generateServices = codeGenRequest.getParameter() === "service=true";
+    const generateServices = codeGenRequest.getParameter().indexOf("service=true") !== -1;
+    const generateClient = codeGenRequest.getParameter().indexOf("client=true") !== -1;
 
     codeGenRequest.getProtoFileList().forEach(protoFileDescriptor => {
       fileNameToDescriptor[protoFileDescriptor.getName()] = protoFileDescriptor;
@@ -38,11 +40,21 @@ withAllStdIn((inputBuff: Buffer) => {
 
       if (generateServices) {
         const fileDescriptorOutput = printFileDescriptorTSServices(fileNameToDescriptor[fileName], exportMap);
-        if (fileDescriptorOutput != "") {
+        if (fileDescriptorOutput !== "") {
           const thisServiceFile = new CodeGeneratorResponse.File();
           thisServiceFile.setName(outputFileName + "_service.ts");
           thisServiceFile.setContent(fileDescriptorOutput);
           codeGenResponse.addFile(thisServiceFile);
+        }
+      }
+
+      if (generateClient) {
+        const fileDescriptorOutput = printFileDescriptorTSClient(fileNameToDescriptor[fileName], exportMap);
+        if (fileDescriptorOutput !== "") {
+          const thisClientFile = new CodeGeneratorResponse.File();
+          thisClientFile.setName(fileName.replace(".proto", "_grpc_pb.d.ts"));
+          thisClientFile.setContent(fileDescriptorOutput);
+          codeGenResponse.addFile(thisClientFile);
         }
       }
     });
